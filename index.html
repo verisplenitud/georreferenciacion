@@ -97,14 +97,14 @@
 
     <!-- S1: Cédula -->
     <div class="screen" id="s1">
-      <div>
+      <div style="margin-top:auto;">
         <div class="field-label">Cédula de identidad</div>
         <input type="text" id="cedula-input" placeholder="Ej: 1712345678" maxlength="10" inputmode="numeric" pattern="\d*" />
         <div class="field-hint">Ingresa tu número de cédula sin guiones ni espacios</div>
         <div class="error-msg" id="err-formato">&#9888; Ingresa una cédula válida de 10 dígitos</div>
       </div>
-      <div class="privacy-note">Al continuar, autorizas el uso de tu ubicación de domicilio para planificación interna, conforme a la LOPDP.</div>
-      <div style="margin-top:auto;">
+      <div style="margin-top:auto; display:flex; flex-direction:column; gap:10px;">
+        <div class="privacy-note">Al continuar, autorizas el uso de tu ubicación de domicilio para planificación interna, conforme a la LOPDP.</div>
         <button class="btn btn-primary" onclick="goS2()">Continuar</button>
       </div>
       <div class="dots">
@@ -123,9 +123,9 @@
         <div class="address-text" id="address-text"><span class="address-loading">Obteniendo dirección...</span></div>
         <a id="map-link" href="#" target="_blank" class="map-link-btn">&#128506; Ver en Google Maps</a>
       </div>
-      <p class="question">¿Este punto es tu domicilio?</p>
+      <div style="background:var(--surface-2); border-radius:var(--radius); padding:12px 14px; text-align:center;"><p style="font-size:14px; font-weight:600; color:var(--text); margin-bottom:4px;">¿Has cambiado de domicilio desde que ingresaste a Veris?</p><p style="font-size:12px; color:var(--text-3);">Si tu domicilio actual es el de arriba, toca <strong>No he cambiado</strong>. Si te mudaste, toca <strong>Sí, actualizar</strong>.</p></div>
       <div class="btn-row">
-        <button class="btn btn-success" onclick="guardar('Confirmado')">&#10003; Sí, es correcto</button>
+        <button class="btn btn-success" onclick="guardar('Confirmado')">&#10003; No he cambiado</button>
         <button class="btn btn-outline-danger" onclick="goCapture()">&#128205; No, actualizar</button>
       </div>
       <div class="dots">
