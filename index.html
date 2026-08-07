@@ -123,9 +123,9 @@
         <div class="address-text" id="address-text"><span class="address-loading">Obteniendo dirección...</span></div>
         <a id="map-link" href="#" target="_blank" class="map-link-btn">&#128506; Ver en Google Maps</a>
       </div>
-      <div style="background:var(--surface-2); border-radius:var(--radius); padding:12px 14px; text-align:center;"><p style="font-size:14px; font-weight:600; color:var(--text); margin-bottom:4px;">¿Has cambiado de domicilio desde que ingresaste a Veris?</p><p style="font-size:12px; color:var(--text-3);">Si tu domicilio actual es el de arriba, toca <strong>No he cambiado</strong>. Si te mudaste, toca <strong>Sí, actualizar</strong>.</p></div>
+      <p class="question">¿Este punto es tu domicilio?</p>
       <div class="btn-row">
-        <button class="btn btn-success" onclick="guardar('Confirmado')">&#10003; No he cambiado</button>
+        <button class="btn btn-success" onclick="guardar('Confirmado')">&#10003; Sí, es correcto</button>
         <button class="btn btn-outline-danger" onclick="goCapture()">&#128205; No, actualizar</button>
       </div>
       <div class="dots">
