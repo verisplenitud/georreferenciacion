@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Georreferenciación — RRHH</title>
+
+  <!-- ============================================================
+    ANTES DE SUBIR A GITHUB:
+    1. Reemplaza SCRIPT_URL por la URL de tu Apps Script desplegado
+    2. Reemplaza los datos de mockData por los datos reales de tus
+       colaboradores (cédula, nombre, área, latitud, longitud)
+       o conecta a una API/Sheets si tienes muchos colaboradores
+  ============================================================ -->
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent: #4361ee;
+      --accent-dark: #3451d1;
+      --success: #2dc653;
+      --success-bg: #edfbf0;
+      --success-text: #1a7a35;
+      --warning-bg: #fff8e6;
+      --warning-border: #f5c842;
+      --warning-text: #7a5c00;
+      --danger: #e63946;
+      --danger-border: #fac5c8;
+      --surface: #ffffff;
+      --surface-2: #f5f7fa;
+      --border: #e2e8f0;
+      --border-strong: #cbd5e1;
+      --text: #1a202c;
+      --text-2: #4a5568;
+      --text-3: #718096;
+      --radius: 12px;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --mono: 'Courier New', monospace;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--surface-2);
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      width: 100%;
+      max-width: 400px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+    }
+
+    .header {
+      background: #eef2ff;
+      padding: 1.25rem 1.5rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .back-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--accent);
+      font-size: 22px;
+      line-height: 1;
+      padding: 2px 6px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .back-btn:hover { background: #dde4ff; }
+    .back-btn.hidden { visibility: hidden; pointer-events: none; }
+
+    .header-center { flex: 1; text-align: center; }
+    .header-right { width: 36px; flex-shrink: 0; }
+
+    .logo {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      margin-top: 2px;
+    }
+
+    .body {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      min-height: 460px;
+    }
+
+    .screen { display: none; flex-direction: column; gap: 1rem; flex: 1; }
+    .screen.active { display: flex; }
+
+    /* Inputs */
+    .field-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-2);
+      margin-bottom: 6px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 12px 14px;
+      font-size: 16px;
+      border-radius: var(--radius);
+      border: 1.5px solid var(--border-strong);
+      background: var(--surface-2);
+      color: var(--text);
+      font-family: var(--font);
+      transition: border-color 0.15s;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: #fff;
+    }
+
+    .field-hint {
+      font-size: 12px;
+      color: var(--text-3);
+      margin-top: 5px;
+    }
+
+    .error-msg {
+      font-size: 12px;
+      color: var(--danger);
+      margin-top: 5px;
+      display: none;
+    }
+
+    /* Botones */
+    .btn {
+      width: 100%;
+      padding: 13px;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1.5px solid var(--border-strong);
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--font);
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn:active { transform: scale(0.98); }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: transparent;
+    }
+
+    .btn-primary:hover { background: var(--accent-dark); }
+
+    .btn-primary:disabled {
+      background: #a0aec0;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: #fff;
+      border-color: transparent;
+    }
+
+    .btn-success:hover { background: #25b347; }
+
+    .btn-outline-danger {
+      background: #fff;
+      color: var(--danger);
+      border-color: var(--danger-border);
+    }
+
+    .btn-outline-danger:hover { background: #fff5f5; }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    /* Cards de info */
+    .info-card {
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      border-radius: var(--radius);
+      padding: 1rem 1.1rem;
+    }
+
+    .info-card .colab-name {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .info-card .colab-area {
+      font-size: 13px;
+      color: var(--text-2);
+      margin-top: 3px;
+    }
+
+    .no-record-card {
+      background: var(--warning-bg);
+      border: 1px solid var(--warning-border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .warn-box {
+      background: var(--warning-bg);
+      border: 1px solid var(--warning-border);
+      border-radius: var(--radius);
+      padding: 0.85rem 1rem;
+    }
+
+    .warn-box p {
+      font-size: 13px;
+      color: var(--warning-text);
+      font-weight: 500;
+    }
+
+    /* Mapa preview */
+    .map-preview {
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      height: 150px;
+      background: var(--surface-2);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .map-preview svg { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+    .map-pin { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); font-size: 30px; z-index: 2; }
+
+    .map-link-btn {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: none;
+      font-family: var(--font);
+      z-index: 3;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Coordenadas */
+    .coords-box {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--text-2);
+      font-family: var(--mono);
+      display: none;
+    }
+
+    .coords-box.error { color: var(--danger); }
+
+    /* Dots */
+    .dots {
+      display: flex;
+      gap: 7px;
+      justify-content: center;
+      margin-top: auto;
+      padding-top: 0.75rem;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--border-strong);
+      transition: background 0.2s;
+    }
+
+    .dot.active { background: var(--accent); }
+
+    /* Éxito */
+    .success-wrap {
+      text-align: center;
+      padding: 1.5rem 0 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .success-circle {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: var(--success-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 34px;
+    }
+
+    .success-title {
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .success-sub {
+      font-size: 14px;
+      color: var(--text-2);
+      line-height: 1.5;
+    }
+
+    .privacy-note {
+      font-size: 11px;
+      color: var(--text-3);
+      text-align: center;
+      line-height: 1.5;
+      margin-top: auto;
+    }
+
+    .question {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      text-align: center;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #fff;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="header">
+    <button class="back-btn hidden" id="back-btn" onclick="goBack()" aria-label="Volver">&#8592;</button>
+    <div class="header-center">
+      <div class="logo">RRHH &mdash; Actualización de datos</div>
+      <div class="title">Georreferenciación</div>
+    </div>
+    <div class="header-right"></div>
+  </div>
+
+  <div class="body">
+
+    <!-- PANTALLA 1: Cédula -->
+    <div class="screen active" id="s1">
+      <div>
+        <div class="field-label">Cédula de identidad</div>
+        <input type="text" id="cedula-input" placeholder="Ej: 1712345678"
+               maxlength="10" inputmode="numeric" pattern="\d*" />
+        <div class="field-hint">Ingresa tu número de cédula sin guiones ni espacios</div>
+        <div class="error-msg" id="cedula-error">&#x26A0; Ingresa una cédula válida de 10 dígitos</div>
+        <div class="error-msg" id="cedula-notfound">&#x26A0; Cédula no encontrada. Verifica e intenta de nuevo.</div>
+      </div>
+      <div class="privacy-note">
+        Al continuar, autorizas el uso de tu ubicación de domicilio para planificación interna,
+        conforme a la LOPDP.
+      </div>
+      <div style="margin-top:auto;">
+        <button class="btn btn-primary" id="btn-continuar" onclick="goS2()">Continuar</button>
+      </div>
+      <div class="dots">
+        <div class="dot active"></div><div class="dot"></div>
+        <div class="dot"></div><div class="dot"></div>
+      </div>
+    </div>
+
+    <!-- PANTALLA 2A: Con registro -->
+    <div class="screen" id="s2a">
+      <div class="info-card">
+        <div class="colab-name" id="nombre-a"></div>
+        <div class="colab-area" id="area-a"></div>
+      </div>
+      <div class="map-preview">
+        <svg viewBox="0 0 400 150" xmlns="http://www.w3.org/2000/svg">
+          <rect width="400" height="150" fill="#e8f0e8"/>
+          <line x1="0" y1="75" x2="400" y2="75" stroke="#c5d5c5" stroke-width="10"/>
+          <line x1="200" y1="0" x2="200" y2="150" stroke="#c5d5c5" stroke-width="6"/>
+          <line x1="0" y1="37" x2="400" y2="37" stroke="#d5e0d5" stroke-width="3"/>
+          <line x1="0" y1="113" x2="400" y2="113" stroke="#d5e0d5" stroke-width="3"/>
+          <line x1="100" y1="0" x2="100" y2="150" stroke="#d5e0d5" stroke-width="2"/>
+          <line x1="300" y1="0" x2="300" y2="150" stroke="#d5e0d5" stroke-width="2"/>
+          <rect x="20" y="12" width="60" height="22" rx="4" fill="#d0dcd0"/>
+          <rect x="90" y="48" width="36" height="18" rx="4" fill="#d0dcd0"/>
+          <rect x="220" y="85" width="65" height="28" rx="4" fill="#d0dcd0"/>
+          <rect x="310" y="18" width="50" height="16" rx="4" fill="#d0dcd0"/>
+          <rect x="140" y="20" width="40" height="30" rx="4" fill="#d0dcd0"/>
+        </svg>
+        <div class="map-pin">📍</div>
+        <a id="map-link" href="#" target="_blank" class="map-link-btn">
+          &#128204; Ver en Maps
+        </a>
+      </div>
+      <p class="question">¿Este punto es tu domicilio?</p>
+      <div class="btn-row">
+        <button class="btn btn-success" onclick="guardar('Confirmado')">&#10003; Sí, es correcto</button>
+        <button class="btn btn-outline-danger" onclick="goCapture()">&#128205; No, actualizar</button>
+      </div>
+      <div class="dots">
+        <div class="dot"></div><div class="dot active"></div>
+        <div class="dot"></div><div class="dot"></div>
+      </div>
+    </div>
+
+    <!-- PANTALLA 2B: Sin registro -->
+    <div class="screen" id="s2b">
+      <div class="info-card">
+        <div class="colab-name" id="nombre-b"></div>
+        <div class="colab-area" id="area-b"></div>
+      </div>
+      <div class="no-record-card">
+        <div style="font-size:28px;">&#128205;</div>
+        <p style="font-weight:600; margin-top:8px; color:var(--warning-text);">Sin ubicación registrada</p>
+        <p style="font-size:12px; color:var(--warning-text); margin-top:5px; line-height:1.5;">
+          Nunca has ingresado tu ubicación de domicilio.<br>Necesitamos registrarla por primera vez.
+        </p>
+      </div>
+      <p style="font-size:13px; color:var(--text-2); line-height:1.6;">
+        Asegúrate de estar en tu casa antes de continuar.
+        Tu celular capturará tu ubicación automáticamente con GPS.
+      </p>
+      <div style="margin-top:auto;">
+        <button class="btn btn-primary" onclick="goCapture()">&#128205; Registrar mi domicilio</button>
+      </div>
+      <div class="dots">
+        <div class="dot"></div><div class="dot active"></div>
+        <div class="dot"></div><div class="dot"></div>
+      </div>
+    </div>
+
+    <!-- PANTALLA 3: Captura GPS -->
+    <div class="screen" id="s3">
+      <div class="warn-box">
+        <p>&#127968; Asegúrate de estar en tu domicilio antes de capturar</p>
+      </div>
+      <p style="font-size:13px; color:var(--text-2); line-height:1.6;">
+        Al tocar el botón, tu celular pedirá permiso para acceder al GPS
+        y capturará tu ubicación actual.
+      </p>
+      <div class="coords-box" id="coords-box"></div>
+      <div style="margin-top:auto; display:flex; flex-direction:column; gap:10px;">
+        <button class="btn btn-primary" id="btn-gps" onclick="captureGPS()">
+          &#127919; Capturar mi ubicación
+        </button>
+        <button class="btn btn-success" id="btn-guardar-gps" onclick="guardar('Actualizado')" style="display:none;">
+          &#10003; Confirmar y guardar
+        </button>
+      </div>
+      <div class="dots">
+        <div class="dot"></div><div class="dot"></div>
+        <div class="dot active"></div><div class="dot"></div>
+      </div>
+    </div>
+
+    <!-- PANTALLA 4: Éxito -->
+    <div class="screen" id="s4">
+      <div class="success-wrap">
+        <div class="success-circle">&#9989;</div>
+        <div class="success-title">&#161;Listo!</div>
+        <p class="success-sub" id="success-msg">Tu domicilio ha sido registrado correctamente.</p>
+      </div>
+      <div class="privacy-note" style="margin-top:auto;">
+        Esta información es confidencial y se usará únicamente para planificación interna.
+        Puedes solicitar la eliminación de tus datos en cualquier momento a RRHH.
+      </div>
+      <div class="dots">
+        <div class="dot"></div><div class="dot"></div>
+        <div class="dot"></div><div class="dot active"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  // CONFIGURACIÓN — edita estos dos valores antes de publicar
+  // ============================================================
+
+  const SCRIPT_URL = 'PEGA_AQUI_LA_URL_DE_TU_APPS_SCRIPT';
+  // Ejemplo: 'https://script.google.com/macros/s/ABC123.../exec'
+
+  // Datos de colaboradores — reemplaza con los datos reales
+  // Formato: 'cedula': { nombre, area, lat, lng, hasGeo }
+  // hasGeo: true si ya tiene coordenadas, false si nunca ha registrado
+  const colaboradores = {
+    '1712345678': { nombre: 'Juan Pérez',   area: 'Ventas — Zona Norte',      lat: -0.180653, lng: -78.467834, hasGeo: true  },
+    '0987654321': { nombre: 'Ana Torres',   area: 'Operaciones — Quito Sur',   lat: -0.234100, lng: -78.512300, hasGeo: true  },
+    '1756789012': { nombre: 'Carlos Mora',  area: 'Logística',                 lat: null,      lng: null,       hasGeo: false }
+    // Agrega más colaboradores aquí...
+  };
+
+  // ============================================================
+  // LÓGICA DE LA APP — no es necesario editar debajo de esta línea
+  // ============================================================
+
+  let user = null;
+  let capturedLat = null;
+  let capturedLng = null;
+  let prevScreen = null;
+
+  const backBtn = document.getElementById('back-btn');
+
+  function show(id, prev) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    prevScreen = prev || null;
+    backBtn.classList.toggle('hidden', id === 's1' || id === 's4');
+  }
+
+  function goBack() {
+    if (!prevScreen) return;
+    if (prevScreen === 's1') {
+      document.getElementById('cedula-input').value = '';
+      document.getElementById('cedula-error').style.display = 'none';
+      document.getElementById('cedula-notfound').style.display = 'none';
+    }
+    show(prevScreen, null);
+  }
+
+  function goS2() {
+    const val = document.getElementById('cedula-input').value.trim();
+    const errFormato = document.getElementById('cedula-error');
+    const errNotFound = document.getElementById('cedula-notfound');
+
+    errFormato.style.display = 'none';
+    errNotFound.style.display = 'none';
+
+    if (!/^\d{10}$/.test(val)) {
+      errFormato.style.display = 'block';
+      return;
+    }
+
+    user = colaboradores[val];
+
+    if (!user) {
+      errNotFound.style.display = 'block';
+      return;
+    }
+
+    if (user.hasGeo) {
+      document.getElementById('nombre-a').textContent = user.nombre;
+      document.getElementById('area-a').textContent = 'Área: ' + user.area;
+      document.getElementById('map-link').href =
+        'https://www.google.com/maps?q=' + user.lat + ',' + user.lng;
+      show('s2a', 's1');
+    } else {
+      document.getElementById('nombre-b').textContent = user.nombre;
+      document.getElementById('area-b').textContent = 'Área: ' + user.area;
+      show('s2b', 's1');
+    }
+  }
+
+  function goCapture() {
+    capturedLat = null;
+    capturedLng = null;
+    const box = document.getElementById('coords-box');
+    box.style.display = 'none';
+    box.className = 'coords-box';
+    document.getElementById('btn-guardar-gps').style.display = 'none';
+    document.getElementById('btn-gps').disabled = false;
+    document.getElementById('btn-gps').innerHTML = '&#127919; Capturar mi ubicación';
+    const prev = user && user.hasGeo ? 's2a' : 's2b';
+    show('s3', prev);
+  }
+
+  function captureGPS() {
+    const btn = document.getElementById('btn-gps');
+    const box = document.getElementById('coords-box');
+    const btnGuardar = document.getElementById('btn-guardar-gps');
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>&nbsp;Capturando...';
+    box.style.display = 'none';
+    btnGuardar.style.display = 'none';
+
+    if (!navigator.geolocation) {
+      box.className = 'coords-box error';
+      box.textContent = 'GPS no disponible en este dispositivo.';
+      box.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = '&#127919; Intentar de nuevo';
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        capturedLat = pos.coords.latitude.toFixed(6);
+        capturedLng = pos.coords.longitude.toFixed(6);
+        box.className = 'coords-box';
+        box.textContent = capturedLat + ', ' + capturedLng;
+        box.style.display = 'block';
+        btn.innerHTML = '&#127919; Volver a capturar';
+        btn.disabled = false;
+        btnGuardar.style.display = 'flex';
+      },
+      (err) => {
+        box.className = 'coords-box error';
+        box.textContent = 'No se pudo obtener la ubicación. Activa el GPS e intenta de nuevo.';
+        box.style.display = 'block';
+        btn.innerHTML = '&#127919; Intentar de nuevo';
+        btn.disabled = false;
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+    );
+  }
+
+  function guardar(accion) {
+    const cedula = document.getElementById('cedula-input').value.trim();
+
+    let latFinal, lngFinal;
+
+    if (accion === 'Confirmado') {
+      latFinal = user.lat;
+      lngFinal = user.lng;
+    } else {
+      latFinal = capturedLat;
+      lngFinal = capturedLng;
+    }
+
+    const payload = {
+      cedula:   cedula,
+      nombre:   user.nombre,
+      area:     user.area,
+      latitud:  latFinal,
+      longitud: lngFinal,
+      accion:   accion   // 'Confirmado' | 'Actualizado' | 'Registrado nuevo'
+    };
+
+    if (accion !== 'Confirmado' && !user.hasGeo) {
+      payload.accion = 'Registrado nuevo';
+    }
+
+    // Mostrar pantalla de éxito inmediatamente (UX)
+    const msg = accion === 'Confirmado'
+      ? 'Tu domicilio ha sido confirmado correctamente.'
+      : !user.hasGeo
+        ? 'Tu domicilio ha sido registrado por primera vez correctamente.'
+        : 'Tu domicilio ha sido actualizado correctamente.';
+
+    document.getElementById('success-msg').textContent = msg;
+    show('s4', null);
+
+    // Enviar al Apps Script en segundo plano
+    fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).catch(() => {
+      // Silencioso — no interrumpir al usuario
+      console.warn('Error al guardar. Revisar conexión.');
+    });
+  }
+
+  // Permite enviar con Enter en el campo de cédula
+  document.getElementById('cedula-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') goS2();
+  });
+</script>
+
+</body>
+</html>
