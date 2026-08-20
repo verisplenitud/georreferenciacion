@@ -307,55 +307,6 @@ function goS2() {
   cedulaIngresada = val;
   user = colaboradores[val] || null;
 
-  const btn = document.querySelector('#s1 .btn-primary');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>&nbsp;Verificando...';
-
-  // Consultar hoja Cedulas (una fila por persona — búsqueda rápida)
-  fetch(SCRIPT_URL + '?cedula=' + val)
-    .then(r => r.json())
-    .then(res => {
-      btn.disabled = false;
-      btn.innerHTML = 'Continuar';
-      if (res.encontrado && res.registro) {
-        const reg = res.registro;
-        const nombre = formatNombre(reg.nombre || (user ? user.nombre : val));
-        document.getElementById('nombre-d').textContent = nombre;
-        document.getElementById('cedula-d').textContent = 'Cédula: ' + val;
-        var fechaRaw = String(reg.fecha || '');
-        if (fechaRaw.indexOf('GMT') !== -1 || fechaRaw.length > 12) {
-          try {
-            var d = new Date(fechaRaw);
-            fechaRaw = String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
-          } catch(ex) {}
-        }
-        document.getElementById('fecha-d').textContent = fechaRaw;
-        const lat = parseFloat(reg.latitud);
-        const lng = parseFloat(reg.longitud);
-        if (!isNaN(lat) && !isNaN(lng)) {
-          document.getElementById('map-link-d').href = 'https://www.google.com/maps?q=' + lat + ',' + lng;
-          document.getElementById('address-d').innerHTML = '<span class="address-loading">Obteniendo dirección...</span>';
-          obtenerDireccionElem(lat, lng, 'address-d');
-        } else {
-          document.getElementById('address-d').textContent = 'Dirección no disponible';
-        }
-        user = {
-          nombre: reg.nombre || (user ? user.nombre : val),
-          lat: lat, lng: lng, hasGeo: true, area: reg.area || ''
-        };
-        show('s2d', 's1');
-      } else {
-        flujoNormal(val);
-      }
-    })
-    .catch(() => {
-      btn.disabled = false;
-      btn.innerHTML = 'Continuar';
-      flujoNormal(val);
-    });
-}
-
-function flujoNormal(val) {
   if (user && user.hasGeo) {
     document.getElementById('nombre-a').textContent = formatNombre(user.nombre);
     document.getElementById('cedula-a').textContent = 'Cédula: ' + val;
