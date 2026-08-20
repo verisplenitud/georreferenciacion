@@ -238,9 +238,7 @@
     </div>
 
   </div>
-</div>
-
-  <div style="background:#f5f7fa; border-top:1px solid #e2e8f0; padding:1rem 1.5rem; text-align:center;">
+  <div style="background:#f5f7fa; border-top:1px solid #e2e8f0; padding:0.85rem 1.5rem; text-align:center;">
     <p style="font-size:11px; color:#718096; line-height:1.6;">
       ¿Tienes dificultades para completar el formulario?<br>
       Escríbenos a <a href="mailto:camila.navarro@veris.com.ec" style="color:#4361ee; text-decoration:none; font-weight:500;">camila.navarro@veris.com.ec</a><br>
@@ -314,18 +312,18 @@ function goS2() {
         const reg = res.registro;
         document.getElementById('nombre-d').textContent = formatNombre(reg.nombre || (user ? user.nombre : val));
         document.getElementById('cedula-d').textContent = 'Cédula: ' + val;
-        // Formatear fecha correctamente (viene como dd/MM/yyyy desde el script)
-        // La fecha viene como dd/MM/yyyy desde Apps Script, mostrarla directamente
-        document.getElementById('fecha-d').textContent = reg.fecha || '';
-        // Mostrar última ubicación registrada
-        const latD = parseFloat(reg.latitud);
-        const lngD = parseFloat(reg.longitud);
-        if (!isNaN(latD) && !isNaN(lngD)) {
-          document.getElementById('map-link-d').href = 'https://www.google.com/maps?q=' + latD + ',' + lngD;
-          obtenerDireccionElem(latD, lngD, 'address-d');
-        } else {
-          document.getElementById('address-d').textContent = 'Dirección no disponible';
+        // Formatear fecha — si viene con GMT convertir, si ya es dd/MM/yyyy mostrar directo
+        var fechaRaw = String(reg.fecha || '');
+        if (fechaRaw.indexOf('GMT') !== -1 || fechaRaw.length > 12) {
+          try {
+            var d = new Date(fechaRaw);
+            var dd = String(d.getDate()).padStart(2,'0');
+            var mm = String(d.getMonth()+1).padStart(2,'0');
+            var yyyy = d.getFullYear();
+            fechaRaw = dd + '/' + mm + '/' + yyyy;
+          } catch(ex) {}
         }
+        document.getElementById('fecha-d').textContent = fechaRaw;
         if (!user) user = { nombre: reg.nombre, hasGeo: false };
         show('s2d', 's1');
       } else {
