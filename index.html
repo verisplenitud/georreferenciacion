@@ -324,7 +324,14 @@ function goS2() {
           } catch(ex) {}
         }
         document.getElementById('fecha-d').textContent = fechaRaw;
-        if (!user) user = { nombre: reg.nombre, hasGeo: false };
+        // Guardar datos completos para que el flujo de captura funcione
+        user = {
+          nombre: reg.nombre || (user ? user.nombre : val),
+          lat: parseFloat(reg.latitud) || null,
+          lng: parseFloat(reg.longitud) || null,
+          hasGeo: true,
+          area: reg.area || ''
+        };
         show('s2d', 's1');
       } else {
         flujoNormal(val);
