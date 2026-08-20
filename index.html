@@ -270,24 +270,100 @@ function goS2() {
   cedulaIngresada = val;
   user = colaboradores[val] || null;
 
-  if (user && user.hasGeo) {
-    document.getElementById('nombre-a').textContent = formatNombre(user.nombre);
-    document.getElementById('cedula-a').textContent = 'Cédula: ' + val;
-    document.getElementById('map-link').href = 'https://www.google.com/maps?q=' + user.lat + ',' + user.lng;
-    document.getElementById('address-text').innerHTML = '<span class="address-loading">Obteniendo dirección...</span>';
-    obtenerDireccion(user.lat, user.lng);
-    show('s2a', 's1');
-  } else if (user && !user.hasGeo) {
-    document.getElementById('nombre-b').textContent = formatNombre(user.nombre);
-    document.getElementById('cedula-b').textContent = 'Cédula: ' + val;
-    show('s2b', 's1');
-  } else {
-    document.getElementById('cedula-notfound-txt').textContent = val;
-    show('s2c', 's1');
-  }
+  // Mostrar cargando
+  const btn = document.querySelector('#s1 .btn-primary');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>&nbsp;Verificando...';
+
+  // Consultar si ya tiene registro en Sheets
+  fetch(SCRIPT_URL + '?cedula=' + val)
+    .then(r => r.json())
+    .then(res => {
+      btn.disabled = false;
+      btn.innerHTML = 'Continuar';
+
+      if (res.encontrado && res.registro) {
+        const reg = res.registro;
+        const accion = reg.accion || '';
+        const nombre = formatNombre(reg.nombre || (user ? user.nombre : val));
+        const lat = parseFloat(reg.latitud);
+        const lng = parseFloat(reg.longitud);
+        const fecha = reg.fecha || '';
+
+        // Actualizar user con datos del registro previo para el flujo de captura
+        if (!user) user = { nombre: reg.nombre, lat: lat, lng: lng, hasGeo: true };
+
+        if (accion === 'Confirmado') {
+          // Ya confirmó — mostrar S2D
+          document.getElementById('nombre-d').textContent = nombre;
+          document.getElementById('cedula-d').textContent = 'Cédula: ' + val;
+          document.getElementById('fecha-d').textContent = fecha;
+          document.getElementById('map-link-d').href = 'https://www.google.com/maps?q=' + lat + ',' + lng;
+          document.getElementById('address-d').innerHTML = '<span class="address-loading">Obteniendo dirección...</span>';
+          obtenerDireccionElem(lat, lng, 'address-d');
+          show('s2d', 's1');
+        } else {
+          // Ya actualizó o registró — mostrar S2E
+          document.getElementById('nombre-e').textContent = nombre;
+          document.getElementById('cedula-e').textContent = 'Cédula: ' + val;
+          document.getElementById('fecha-e').textContent = fecha;
+          document.getElementById('map-link-e').href = 'https://www.google.com/maps?q=' + lat + ',' + lng;
+          document.getElementById('address-e').innerHTML = '<span class="address-loading">Obteniendo dirección...</span>';
+          obtenerDireccionElem(lat, lng, 'address-e');
+          show('s2e', 's1');
+        }
+      } else {
+        // No tiene registro previo — flujo normal
+        if (user && user.hasGeo) {
+          document.getElementById('nombre-a').textContent = formatNombre(user.nombre);
+          document.getElementById('cedula-a').textContent = 'Cédula: ' + val;
+          document.getElementById('map-link').href = 'https://www.google.com/maps?q=' + user.lat + ',' + user.lng;
+          document.getElementById('address-text').innerHTML = '<span class="address-loading">Obteniendo dirección...</span>';
+          obtenerDireccion(user.lat, user.lng);
+          show('s2a', 's1');
+        } else if (user && !user.hasGeo) {
+          document.getElementById('nombre-b').textContent = formatNombre(user.nombre);
+          document.getElementById('cedula-b').textContent = 'Cédula: ' + val;
+          show('s2b', 's1');
+        } else {
+          document.getElementById('cedula-notfound-txt').textContent = val;
+          show('s2c', 's1');
+        }
+      }
+    })
+    .catch(() => {
+      btn.disabled = false;
+      btn.innerHTML = 'Continuar';
+      // Si falla la consulta, continuar con flujo normal sin bloquear
+      if (user && user.hasGeo) {
+        document.getElementById('nombre-a').textContent = formatNombre(user.nombre);
+        document.getElementById('cedula-a').textContent = 'Cédula: ' + val;
+        document.getElementById('map-link').href = 'https://www.google.com/maps?q=' + user.lat + ',' + user.lng;
+        document.getElementById('address-text').innerHTML = '<span class="address-loading">Obteniendo dirección...</span>';
+        obtenerDireccion(user.lat, user.lng);
+        show('s2a', 's1');
+      } else if (user && !user.hasGeo) {
+        document.getElementById('nombre-b').textContent = formatNombre(user.nombre);
+        document.getElementById('cedula-b').textContent = 'Cédula: ' + val;
+        show('s2b', 's1');
+      } else {
+        document.getElementById('cedula-notfound-txt').textContent = val;
+        show('s2c', 's1');
+      }
+    });
+}
+
+// No genera nuevo registro — solo muestra éxito
+function noNuevoRegistro() {
+  document.getElementById('success-msg').textContent = 'Tu ubicación registrada se mantiene sin cambios.';
+  show('s4', null);
 }
 
 function obtenerDireccion(lat, lng) {
+  obtenerDireccionElem(lat, lng, 'address-text');
+}
+
+function obtenerDireccionElem(lat, lng, elementId) {
   fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=es`)
     .then(r => r.json())
     .then(data => {
@@ -297,10 +373,10 @@ function obtenerDireccion(lat, lng) {
       if (addr.suburb || addr.neighbourhood) partes.push(addr.suburb || addr.neighbourhood);
       if (addr.city || addr.town || addr.county) partes.push(addr.city || addr.town || addr.county);
       const direccion = partes.length > 0 ? partes.join(', ') : data.display_name.split(',').slice(0,3).join(',');
-      document.getElementById('address-text').textContent = direccion;
+      document.getElementById(elementId).textContent = direccion;
     })
     .catch(() => {
-      document.getElementById('address-text').textContent = lat + ', ' + lng;
+      document.getElementById(elementId).textContent = lat + ', ' + lng;
     });
 }
 
