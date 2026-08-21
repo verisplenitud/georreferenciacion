@@ -237,7 +237,7 @@
       <div class="warn-box">
         <p>&#127968; Aseg&#250;rate de estar en tu domicilio antes de capturar</p>
       </div>
-      <p style="font-size:13px; color:var(--text-2); line-height:1.6;">Al tocar el bot&#243;n, tu celular pedir&#225; permiso para acceder al GPS. Puede tardar hasta 20-25 segundos mientras mejoramos la precisi&#243;n &mdash; no cierres la pantalla.</p>
+      <p style="font-size:13px; color:var(--text-2); line-height:1.6;">Al tocar el bot&#243;n, tu celular pedir&#225; permiso para acceder al GPS y capturar&#225; tu ubicaci&#243;n.</p>
       <div class="coords-box" id="coords-box"></div>
       <div style="margin-top:auto; display:flex; flex-direction:column; gap:10px;">
         <button class="btn btn-primary" id="btn-gps" onclick="captureGPS()">&#127919; Capturar mi ubicaci&#243;n</button>
@@ -285,14 +285,8 @@ let colab = null;
 let respPrev = null;
 let capturedLat = null;
 let capturedLng = null;
-let capturedAccuracy = null;
 let prevScreen = null;
 let cedula = '';
-
-// Umbrales de precisión del GPS, en metros.
-const GOOD_ACCURACY_M = 20;       // si llegamos a esto, dejamos de esperar: ya es muy buena
-const ACCEPTABLE_ACCURACY_M = 50; // si el mejor resultado es peor que esto, avisamos al usuario
-const MAX_CAPTURE_MS = 25000;     // tiempo máximo esperando un mejor fix antes de usar el mejor que tengamos
 const backBtn = document.getElementById('back-btn');
 
 function show(id, prev) {
@@ -435,7 +429,7 @@ function obtenerDir(lat, lng, elementId) {
 }
 
 function goCapture(prev) {
-  capturedLat = null; capturedLng = null; capturedAccuracy = null;
+  capturedLat = null; capturedLng = null;
   const box = document.getElementById('coords-box');
   box.style.display = 'none'; box.className = 'coords-box';
   document.getElementById('btn-guardar-gps').style.display = 'none';
@@ -444,21 +438,12 @@ function goCapture(prev) {
   show('s3', prev);
 }
 
-// Nota sobre por qué esto usaba pocos decimales / ubicación incorrecta:
-// El código anterior tomaba UNA sola lectura con getCurrentPosition() y la guardaba
-// tal cual, sin mirar pos.coords.accuracy. En un teléfono, la primera lectura de
-// geolocalización suele venir de WiFi/antenas (rápida pero imprecisa, a veces con
-// error de cientos o miles de metros), y el GPS real recién "engancha" satélites
-// unos segundos después — por eso al reintentar manualmente 2-3 veces salían
-// coordenadas distintas y con más decimales significativos. Ahora se usa
-// watchPosition() para escuchar varias lecturas seguidas durante unos segundos,
-// quedarnos con la más precisa (menor accuracy) y mostrar esa precisión al usuario.
 function captureGPS() {
   const btn = document.getElementById('btn-gps');
   const box = document.getElementById('coords-box');
   const btnG = document.getElementById('btn-guardar-gps');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>&nbsp;Buscando señal GPS...';
+  btn.innerHTML = '<span class="spinner"></span>&nbsp;Capturando... (puede tardar unos segundos)';
   box.style.display = 'none'; btnG.style.display = 'none';
 
   if (!navigator.geolocation) {
@@ -469,63 +454,29 @@ function captureGPS() {
     return;
   }
 
-  let best = null;
-  let finished = false;
-  let watchId = null;
-
-  const finish = () => {
-    if (finished) return;
-    finished = true;
-    if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
-    clearTimeout(giveUpTimer);
-
-    if (!best) {
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      capturedLat = pos.coords.latitude;
+      capturedLng = pos.coords.longitude;
+      box.className = 'coords-box';
+      box.textContent = capturedLat.toFixed(6) + ', ' + capturedLng.toFixed(6);
+      box.style.display = 'block';
+      btn.innerHTML = '&#127919; Volver a capturar'; btn.disabled = false;
+      btnG.style.display = 'flex';
+    },
+    () => {
       box.className = 'coords-box error';
       box.textContent = 'No se pudo obtener la ubicación. Activa el GPS e intenta de nuevo.';
       box.style.display = 'block';
       btn.innerHTML = '&#127919; Intentar de nuevo'; btn.disabled = false;
-      return;
-    }
-
-    capturedLat = best.lat;
-    capturedLng = best.lng;
-    capturedAccuracy = best.accuracy;
-
-    const precisionTxt = 'Precisión: ±' + Math.round(best.accuracy) + ' m';
-    const coordsTxt = capturedLat.toFixed(6) + ', ' + capturedLng.toFixed(6) + '  (' + precisionTxt + ')';
-
-    if (best.accuracy > ACCEPTABLE_ACCURACY_M) {
-      box.className = 'coords-box error';
-      box.textContent = coordsTxt + ' — La precisión es baja. Si puedes, acércate a una ventana o a un espacio abierto y vuelve a capturar antes de guardar.';
-    } else {
-      box.className = 'coords-box';
-      box.textContent = coordsTxt;
-    }
-    box.style.display = 'block';
-    btn.innerHTML = '&#127919; Volver a capturar'; btn.disabled = false;
-    btnG.style.display = 'flex';
-  };
-
-  const giveUpTimer = setTimeout(finish, MAX_CAPTURE_MS);
-
-  watchId = navigator.geolocation.watchPosition(
-    pos => {
-      const acc = pos.coords.accuracy;
-      if (!best || acc < best.accuracy) {
-        best = { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: acc };
-      }
-      btn.innerHTML = '<span class="spinner"></span>&nbsp;Mejorando precisión... (±' + Math.round(acc) + ' m)';
-      if (acc <= GOOD_ACCURACY_M) finish();
     },
-    () => finish(),
-    { enableHighAccuracy: true, timeout: MAX_CAPTURE_MS, maximumAge: 0 }
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
   );
 }
 
 async function guardar(accion) {
   let latFinal = capturedLat;
   let lngFinal = capturedLng;
-  let accuracyFinal = capturedAccuracy;
 
   if (accion === 'confirmada') {
     if (respPrev) {
@@ -535,7 +486,6 @@ async function guardar(accion) {
       latFinal = colab.lat;
       lngFinal = colab.lng;
     }
-    accuracyFinal = null; // se reutiliza un punto ya existente, no hay una nueva lectura GPS
   }
 
   document.getElementById('success-msg').textContent =
@@ -545,41 +495,21 @@ async function guardar(accion) {
 
   show('s4', null);
 
-  const payload = {
-    cedula: cedula,
-    nombre: colab ? colab.nombre : 'No encontrado',
-    lat: latFinal,
-    lng: lngFinal,
-    accuracy: accuracyFinal,
-    accion: accion,
-    area: colab ? (colab.area || '') : ''
-  };
-
   try {
-    let res = await fetch(`${SUPABASE_URL}/rest/v1/respuestas`, {
+    await fetch(`${SUPABASE_URL}/rest/v1/respuestas`, {
       method: 'POST',
       headers: { ...HEADERS, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        cedula: cedula,
+        nombre: colab ? colab.nombre : 'No encontrado',
+        lat: latFinal,
+        lng: lngFinal,
+        accion: accion,
+        area: colab ? (colab.area || '') : ''
+      })
     });
-
-    if (!res.ok) {
-      // Si la columna "accuracy" todavía no existe en la tabla `respuestas`,
-      // Supabase/PostgREST rechaza la fila completa (no solo ese campo).
-      // Reintentamos sin "accuracy" para no perder el registro de lat/lng.
-      const errText = await res.text().catch(() => '');
-      console.warn('Guardado con accuracy falló, reintentando sin ese campo:', res.status, errText);
-      const { accuracy, ...payloadSinAccuracy } = payload;
-      res = await fetch(`${SUPABASE_URL}/rest/v1/respuestas`, {
-        method: 'POST',
-        headers: { ...HEADERS, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-        body: JSON.stringify(payloadSinAccuracy)
-      });
-      if (!res.ok) {
-        console.error('Error al guardar (reintento también falló):', res.status, await res.text().catch(() => ''));
-      }
-    }
   } catch(err) {
-    console.error('Error de red al guardar:', err);
+    console.warn('Error al guardar:', err);
   }
 }
 
