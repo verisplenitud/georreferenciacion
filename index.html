@@ -55,7 +55,7 @@
     .address-label { font-size: 11px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
     .address-text { font-size: 14px; color: var(--text); line-height: 1.4; }
     .address-loading { font-size: 13px; color: var(--text-3); font-style: italic; }
-    .map-link-btn { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 8px; cursor: pointer; border: none; font-family: var(--font); text-decoration: none; }
+    .map-link-btn { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 8px; text-decoration: none; }
     .coords-box { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; font-size: 13px; color: var(--text-2); font-family: var(--mono); display: none; }
     .coords-box.error { color: var(--danger); }
     .dots { display: flex; gap: 7px; justify-content: center; margin-top: auto; padding-top: 0.75rem; }
@@ -64,21 +64,20 @@
     .success-wrap { text-align: center; padding: 1.5rem 0 1rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
     .success-circle { width: 72px; height: 72px; border-radius: 50%; background: var(--success-bg); display: flex; align-items: center; justify-content: center; font-size: 34px; }
     .success-title { font-size: 19px; font-weight: 700; color: var(--text); }
-    .success-sub { font-size: 14px; color: var(--text-2); line-height: 1.5; }
     .privacy-note { font-size: 11px; color: var(--text-3); text-align: center; line-height: 1.5; margin-top: auto; }
     .question { font-size: 15px; font-weight: 600; color: var(--text); text-align: center; }
-    .loading-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; flex: 1; }
-    .spinner-lg { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
-    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
     .divider { display: flex; align-items: center; gap: 10px; color: var(--text-3); font-size: 12px; }
     .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .badge-success { background: var(--success-bg); border: 1px solid #6ee7a0; border-radius: var(--radius); padding: 1rem; text-align: center; }
+    .badge-info { background: #eef2ff; border: 1px solid #c7d2fe; border-radius: var(--radius); padding: 1rem; text-align: center; }
     @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
 <div class="card">
   <div class="header">
-    <button class="back-btn hidden" id="back-btn" onclick="goBack()" aria-label="Volver">&#8592;</button>
+    <button class="back-btn hidden" id="back-btn" onclick="goBack()">&#8592;</button>
     <div class="header-center">
       <div class="logo">RRHH &mdash; Actualización de datos</div>
       <div class="title">Georreferenciación</div>
@@ -87,16 +86,8 @@
   </div>
   <div class="body">
 
-    <!-- Cargando datos -->
-    <div class="screen active" id="s0">
-      <div class="loading-screen">
-        <div class="spinner-lg"></div>
-        <p style="font-size:14px; color:var(--text-3);">Cargando...</p>
-      </div>
-    </div>
-
     <!-- S1: Cédula -->
-    <div class="screen" id="s1">
+    <div class="screen active" id="s1">
       <div style="background:#eef2ff; border:1px solid #c7d2fe; border-radius:12px; padding:1rem; display:flex; flex-direction:column; gap:10px;">
         <p style="font-size:13px; font-weight:600; color:#4361ee; margin-bottom:2px;">Antes de comenzar</p>
         <div style="display:flex; gap:10px; align-items:flex-start;">
@@ -114,19 +105,20 @@
       </div>
       <div>
         <div class="field-label">C&#233;dula de identidad</div>
-        <input type="text" id="cedula-input" placeholder="Ej: 1712345678" maxlength="10" inputmode="numeric" pattern="\d*" />
+        <input type="text" id="cedula-input" placeholder="Ej: 1712345678" maxlength="10" inputmode="numeric" />
         <div class="field-hint">Ingresa tu n&#250;mero de c&#233;dula sin guiones ni espacios</div>
         <div class="error-msg" id="err-formato">&#9888; Ingresa una c&#233;dula v&#225;lida de 10 d&#237;gitos</div>
+        <div class="error-msg" id="err-api">&#9888; No pudimos verificar tu c&#233;dula. Intenta de nuevo.</div>
       </div>
       <div style="margin-top:auto;">
-        <button class="btn btn-primary" onclick="goS2()">Continuar</button>
+        <button class="btn btn-primary" id="btn-continuar" onclick="goS2()">Continuar</button>
       </div>
       <div class="dots">
         <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
       </div>
     </div>
 
-    <!-- S2A: Con georref -->
+    <!-- S2A: Primera vez con georref del padrón -->
     <div class="screen" id="s2a">
       <div class="info-card">
         <div class="colab-name" id="nombre-a"></div>
@@ -134,23 +126,23 @@
       </div>
       <div class="address-box">
         <div class="address-label">&#128205; Domicilio registrado</div>
-        <div class="address-text" id="address-text"><span class="address-loading">Obteniendo dirección...</span></div>
-        <a id="map-link" href="#" target="_blank" class="map-link-btn">&#128506; Ver en Google Maps</a>
+        <div class="address-text" id="address-a"><span class="address-loading">Obteniendo direcci&#243;n...</span></div>
+        <a id="map-link-a" href="#" target="_blank" class="map-link-btn">&#128506; Ver en Google Maps</a>
       </div>
       <div style="background:#fff8e6; border:1px solid #f5c842; border-radius:12px; padding:10px 14px;">
-        <p style="font-size:12px; color:#7a5c00; line-height:1.5;">Toca <strong>Ver en Google Maps</strong> para verificar si el punto marcado corresponde a tu domicilio actual. Luego regresa aquí y confirma o actualiza según corresponda.</p>
+        <p style="font-size:12px; color:#7a5c00; line-height:1.5;">Toca <strong>Ver en Google Maps</strong> para verificar si el punto marcado corresponde a tu domicilio actual. Luego regresa aqu&#237; y confirma o actualiza.</p>
       </div>
-      <p class="question">¿Este punto es tu domicilio?</p>
+      <p class="question">&#191;Este punto es tu domicilio?</p>
       <div class="btn-row">
-        <button class="btn btn-success" onclick="guardar('Confirmado')">&#10003; Sí, es correcto</button>
-        <button class="btn btn-outline-danger" onclick="goCapture()">Actualizar</button>
+        <button class="btn btn-success" onclick="guardar('confirmada')">&#10003; S&#237;, es correcto</button>
+        <button class="btn btn-outline-danger" onclick="goCapture('s2a')">Actualizar</button>
       </div>
       <div class="dots">
         <div class="dot"></div><div class="dot active"></div><div class="dot"></div><div class="dot"></div>
       </div>
     </div>
 
-    <!-- S2B: En nómina sin georref -->
+    <!-- S2B: Sin georref (primera vez, sin punto) -->
     <div class="screen" id="s2b">
       <div class="info-card">
         <div class="colab-name" id="nombre-b"></div>
@@ -158,57 +150,82 @@
       </div>
       <div class="no-record-card">
         <div style="font-size:28px;">&#128205;</div>
-        <p style="font-weight:600; margin-top:8px; color:var(--warning-text);">Sin ubicación registrada</p>
-        <p style="font-size:12px; color:var(--warning-text); margin-top:5px; line-height:1.5;">Nunca has ingresado tu ubicación de domicilio.<br>Necesitamos registrarla por primera vez.</p>
+        <p style="font-weight:600; margin-top:8px; color:var(--warning-text);">Sin ubicaci&#243;n registrada</p>
+        <p style="font-size:12px; color:var(--warning-text); margin-top:5px; line-height:1.5;">A&#250;n no tenemos tu ubicaci&#243;n de domicilio. Necesitamos registrarla por primera vez.</p>
       </div>
-      <p style="font-size:13px; color:var(--text-2); line-height:1.6;">Asegúrate de estar en tu casa antes de continuar.</p>
+      <p style="font-size:13px; color:var(--text-2); line-height:1.6;">Aseg&#250;rate de estar en tu casa antes de continuar.</p>
       <div style="margin-top:auto;">
-        <button class="btn btn-primary" onclick="goCapture()">&#128205; Registrar mi domicilio</button>
+        <button class="btn btn-primary" onclick="goCapture('s2b')">&#128205; Registrar mi domicilio</button>
       </div>
       <div class="dots">
         <div class="dot"></div><div class="dot active"></div><div class="dot"></div><div class="dot"></div>
       </div>
     </div>
 
-    <!-- S2C: No en lista -->
+    <!-- S2C: No está en el padrón -->
     <div class="screen" id="s2c">
       <div class="no-record-card">
         <div style="font-size:28px;">&#9888;&#65039;</div>
-        <p style="font-weight:600; margin-top:8px; color:var(--warning-text);">Cédula no encontrada</p>
-        <p style="font-size:12px; color:var(--warning-text); margin-top:5px; line-height:1.5;">La cédula <strong id="cedula-notfound-txt"></strong> no está en nuestro listado.</p>
+        <p style="font-weight:600; margin-top:8px; color:var(--warning-text);">C&#233;dula no encontrada</p>
+        <p style="font-size:12px; color:var(--warning-text); margin-top:5px; line-height:1.5;">La c&#233;dula <strong id="cedula-notfound-txt"></strong> no est&#225; en nuestro listado.</p>
       </div>
-      <p style="font-size:13px; color:var(--text-2); line-height:1.6;">Si eres colaborador activo puedes registrar tu ubicación de todas formas. RRHH revisará tu registro.</p>
+      <p style="font-size:13px; color:var(--text-2); line-height:1.6;">Si eres colaborador activo puedes registrar tu ubicaci&#243;n de todas formas. RRHH revisar&#225; tu registro.</p>
       <div class="divider">o</div>
-      <p style="font-size:12px; color:var(--text-3); text-align:center;">Si te equivocaste de cédula usa &#8592; para corregirla.</p>
+      <p style="font-size:12px; color:var(--text-3); text-align:center;">Si te equivocaste de c&#233;dula usa &#8592; para corregirla.</p>
       <div style="margin-top:auto;">
-        <button class="btn btn-primary" onclick="goCapture()">&#128205; Registrar mi ubicación</button>
+        <button class="btn btn-primary" onclick="goCapture('s2c')">&#128205; Registrar mi ubicaci&#243;n</button>
       </div>
       <div class="dots">
         <div class="dot"></div><div class="dot active"></div><div class="dot"></div><div class="dot"></div>
       </div>
     </div>
 
-
-    <!-- S2D: Ya contestó antes -->
+    <!-- S2D: Ya confirmó antes -->
     <div class="screen" id="s2d">
       <div class="info-card">
         <div class="colab-name" id="nombre-d"></div>
         <div class="colab-cedula" id="cedula-d"></div>
       </div>
-      <div style="background:#edfbf0; border:1px solid #6ee7a0; border-radius:12px; padding:1rem; text-align:center;">
-        <div style="font-size:28px;">&#9989;</div>
-        <p style="font-weight:600; font-size:15px; color:#1a7a35; margin-top:8px;">Ya registraste tu ubicación</p>
-        <p style="font-size:12px; color:#2d6a4f; margin-top:4px; line-height:1.5;">Registrado el <span id="fecha-d"></span></p>
+      <div class="badge-success">
+        <div style="font-size:26px;">&#9989;</div>
+        <p style="font-weight:600; font-size:14px; color:#1a7a35; margin-top:6px;">Ya confirmaste tu georreferenciaci&#243;n</p>
+        <p style="font-size:12px; color:#2d6a4f; margin-top:3px;">Registrado el <strong id="fecha-d"></strong></p>
       </div>
       <div class="address-box">
-        <div class="address-label">&#128205; Última ubicación registrada</div>
-        <div class="address-text" id="address-d"><span class="address-loading">Obteniendo dirección...</span></div>
+        <div class="address-label">&#128205; Ubicaci&#243;n confirmada</div>
+        <div class="address-text" id="address-d"><span class="address-loading">Obteniendo direcci&#243;n...</span></div>
         <a id="map-link-d" href="#" target="_blank" class="map-link-btn">&#128506; Ver en Google Maps</a>
       </div>
-      <p style="font-size:13px; color:var(--text-2); text-align:center; line-height:1.5;">¿No estabas en tu domicilio y quieres volver a capturar tu ubicación?</p>
+      <p style="font-size:13px; color:var(--text-2); text-align:center; line-height:1.5;">&#191;Quieres volver a tomar tu ubicaci&#243;n?</p>
       <div style="margin-top:auto; display:flex; flex-direction:column; gap:8px;">
-        <button class="btn btn-outline-danger" onclick="goCaptureDesdD()">Actualizar mi ubicación</button>
-        <button class="btn btn-success" onclick="guardar('Confirmado')">&#10003; Mi ubicación es correcta</button>
+        <button class="btn btn-outline-danger" onclick="goCapture('s2d')">&#128205; S&#237;, actualizar mi ubicaci&#243;n</button>
+        <button class="btn" onclick="show('s4', null)">No, est&#225; correcta</button>
+      </div>
+      <div class="dots">
+        <div class="dot"></div><div class="dot active"></div><div class="dot"></div><div class="dot"></div>
+      </div>
+    </div>
+
+    <!-- S2E: Ya actualizó antes -->
+    <div class="screen" id="s2e">
+      <div class="info-card">
+        <div class="colab-name" id="nombre-e"></div>
+        <div class="colab-cedula" id="cedula-e"></div>
+      </div>
+      <div class="badge-info">
+        <div style="font-size:26px;">&#128205;</div>
+        <p style="font-weight:600; font-size:14px; color:#4361ee; margin-top:6px;">Ya actualizaste tu ubicaci&#243;n</p>
+        <p style="font-size:12px; color:#4361ee; margin-top:3px; opacity:0.8;">Registrado el <strong id="fecha-e"></strong></p>
+      </div>
+      <div class="address-box">
+        <div class="address-label">&#128205; Ubicaci&#243;n actualizada</div>
+        <div class="address-text" id="address-e"><span class="address-loading">Obteniendo direcci&#243;n...</span></div>
+        <a id="map-link-e" href="#" target="_blank" class="map-link-btn">&#128506; Ver en Google Maps</a>
+      </div>
+      <p style="font-size:13px; color:var(--text-2); text-align:center; line-height:1.5;">&#191;No estabas en tu casa y quieres volver a actualizar?</p>
+      <div class="btn-row">
+        <button class="btn btn-success" onclick="guardar('confirmada')">&#10003; S&#237;, es correcta</button>
+        <button class="btn btn-outline-danger" onclick="goCapture('s2e')">Actualizar</button>
       </div>
       <div class="dots">
         <div class="dot"></div><div class="dot active"></div><div class="dot"></div><div class="dot"></div>
@@ -218,13 +235,13 @@
     <!-- S3: GPS -->
     <div class="screen" id="s3">
       <div class="warn-box">
-        <p>&#127968; Asegúrate de estar en tu domicilio antes de capturar</p>
+        <p>&#127968; Aseg&#250;rate de estar en tu domicilio antes de capturar</p>
       </div>
-      <p style="font-size:13px; color:var(--text-2); line-height:1.6;">Al tocar el botón, tu celular pedirá permiso para acceder al GPS y capturará tu ubicación.</p>
+      <p style="font-size:13px; color:var(--text-2); line-height:1.6;">Al tocar el bot&#243;n, tu celular pedir&#225; permiso para acceder al GPS. Puede tardar hasta 20-25 segundos mientras mejoramos la precisi&#243;n &mdash; no cierres la pantalla.</p>
       <div class="coords-box" id="coords-box"></div>
       <div style="margin-top:auto; display:flex; flex-direction:column; gap:10px;">
-        <button class="btn btn-primary" id="btn-gps" onclick="captureGPS()">&#127919; Capturar mi ubicación</button>
-        <button class="btn btn-success" id="btn-guardar-gps" onclick="guardar('Actualizado')" style="display:none;">&#10003; Confirmar y guardar</button>
+        <button class="btn btn-primary" id="btn-gps" onclick="captureGPS()">&#127919; Capturar mi ubicaci&#243;n</button>
+        <button class="btn btn-success" id="btn-guardar-gps" onclick="guardar('actualizada')" style="display:none;">&#10003; Confirmar y guardar</button>
       </div>
       <div class="dots">
         <div class="dot"></div><div class="dot"></div><div class="dot active"></div><div class="dot"></div>
@@ -236,15 +253,15 @@
       <div class="success-wrap">
         <div class="success-circle">&#9989;</div>
         <div class="success-title">&#161;Listo!</div>
-        <p class="success-sub" id="success-msg"></p>
+        <p style="font-size:14px; color:var(--text-2); line-height:1.5;" id="success-msg">La ubicaci&#243;n de tu domicilio se ha guardado correctamente.</p>
       </div>
       <div style="background:#fff8e6; border:1px solid #f5c842; border-radius:12px; padding:10px 14px; margin-top:auto;">
         <p style="font-size:11px; color:#7a5c00; line-height:1.7; text-align:center;">
-          Recuerda que <strong>con una sola respuesta es suficiente</strong>. Si completas el proceso más de una vez, consideraremos &#250;nicamente tu &#250;ltima respuesta como v&#225;lida.<br><br>
-          <strong>Importante:</strong> El domicilio mostrado en esta encuesta corresponde al que tenemos actualmente en nuestros registros. Al volver a ingresar a la encuesta el domicilio no se actualizar&#225;; la ubicaci&#243;n capturada se actualizar&#225; al cierre de la campa&#241;a.
+          Recuerda que <strong>con una sola respuesta es suficiente</strong>. Si completas el proceso m&#225;s de una vez, consideraremos &#250;nicamente tu &#250;ltima respuesta como v&#225;lida.<br><br>
+          <strong>Importante:</strong> El domicilio mostrado en esta encuesta corresponde al que tenemos actualmente en nuestros registros. Al volver a ingresar, el domicilio no se actualizar&#225;; la ubicaci&#243;n capturada se actualizar&#225; al cierre de la campa&#241;a.
         </p>
       </div>
-      <div class="privacy-note">Esta información es confidencial y se usará únicamente para planificación interna.</div>
+      <div class="privacy-note">Esta informaci&#243;n es confidencial y se usar&#225; &#250;nicamente para planificaci&#243;n interna.</div>
       <div class="dots">
         <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot active"></div>
       </div>
@@ -253,39 +270,36 @@
   </div>
   <div style="border-top:1px solid #e2e8f0; padding:0.85rem 1.5rem; text-align:center; background:#f5f7fa;">
     <p style="font-size:11px; color:#718096; line-height:1.7;">
-      ¿Tienes dificultades para completar el formulario?<br>
+      &#191;Tienes dificultades para completar el formulario?<br>
       Cont&#225;ctate a <a href="mailto:camila.navarro@veris.com.ec" style="color:#4361ee; text-decoration:none; font-weight:500;">camila.navarro@veris.com.ec</a>
     </p>
   </div>
 </div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxWS6fZeLA7hSewtY5hOx1sPHcZ6I6kgpRvSsU_D5FzKPSgSPIuvN485OYi1n0xJ3zt/exec';
+const SUPABASE_URL = 'https://kmmzkcrzygidohvjypsn.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImttbXprY3J6eWdpZG9odmp5cHNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczMzk0NTcsImV4cCI6MjEwMjkxNTQ1N30.Gczq3EM_7YlAXfwXJzz1ttb2t8o1O42PHkWFa3k18qY';
+const HEADERS = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY };
 
-let colaboradores = {};
-let user = null;
+let colab = null;
+let respPrev = null;
 let capturedLat = null;
 let capturedLng = null;
+let capturedAccuracy = null;
 let prevScreen = null;
-let cedulaIngresada = '';
-const backBtn = document.getElementById('back-btn');
+let cedula = '';
 
-// Cargar datos desde archivo JSON separado
-fetch('colaboradores.json')
-  .then(r => r.json())
-  .then(data => {
-    colaboradores = data;
-    show('s1', null);
-  })
-  .catch(() => {
-    document.querySelector('#s0 p').textContent = 'Error al cargar datos. Recarga la página.';
-  });
+// Umbrales de precisión del GPS, en metros.
+const GOOD_ACCURACY_M = 20;       // si llegamos a esto, dejamos de esperar: ya es muy buena
+const ACCEPTABLE_ACCURACY_M = 50; // si el mejor resultado es peor que esto, avisamos al usuario
+const MAX_CAPTURE_MS = 25000;     // tiempo máximo esperando un mejor fix antes de usar el mejor que tengamos
+const backBtn = document.getElementById('back-btn');
 
 function show(id, prev) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   prevScreen = prev || null;
-  backBtn.classList.toggle('hidden', id === 's0' || id === 's1' || id === 's4');
+  backBtn.classList.toggle('hidden', id === 's1' || id === 's4');
 }
 
 function goBack() {
@@ -293,46 +307,116 @@ function goBack() {
   if (prevScreen === 's1') {
     document.getElementById('cedula-input').value = '';
     document.getElementById('err-formato').style.display = 'none';
+    document.getElementById('err-api').style.display = 'none';
   }
   show(prevScreen, null);
 }
 
-function formatNombre(nombre) {
+function fmt(nombre) {
   return nombre.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
 }
 
-function goS2() {
+function fmtFecha(iso) {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  } catch(e) { return iso; }
+}
+
+async function sbFetch(path) {
+  const r = await fetch(SUPABASE_URL + path, { headers: HEADERS });
+  return r.json();
+}
+
+async function goS2() {
   const val = document.getElementById('cedula-input').value.trim();
   document.getElementById('err-formato').style.display = 'none';
+  document.getElementById('err-api').style.display = 'none';
+
   if (!/^\d{10}$/.test(val)) {
     document.getElementById('err-formato').style.display = 'block';
     return;
   }
-  cedulaIngresada = val;
-  user = colaboradores[val] || null;
 
-  if (user && user.hasGeo) {
-    document.getElementById('nombre-a').textContent = formatNombre(user.nombre);
-    document.getElementById('cedula-a').textContent = 'Cédula: ' + val;
-    document.getElementById('map-link').href = 'https://www.google.com/maps?q=' + user.lat + ',' + user.lng;
-    document.getElementById('address-text').innerHTML = '<span class="address-loading">Obteniendo dirección...</span>';
-    obtenerDireccion(user.lat, user.lng);
-    show('s2a', 's1');
-  } else if (user && !user.hasGeo) {
-    document.getElementById('nombre-b').textContent = formatNombre(user.nombre);
-    document.getElementById('cedula-b').textContent = 'Cédula: ' + val;
-    show('s2b', 's1');
-  } else {
-    document.getElementById('cedula-notfound-txt').textContent = val;
-    show('s2c', 's1');
+  cedula = val;
+  const btn = document.getElementById('btn-continuar');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>&nbsp;Verificando...';
+
+  try {
+    const [colabs, resps] = await Promise.all([
+      sbFetch(`/rest/v1/Colaboradores?cedula=eq.${val}&limit=1`),
+      sbFetch(`/rest/v1/respuestas?cedula=eq.${val}&order=created_at.desc&limit=1`)
+    ]);
+
+    colab = colabs.length > 0 ? colabs[0] : null;
+    respPrev = resps.length > 0 ? resps[0] : null;
+
+    btn.disabled = false;
+    btn.innerHTML = 'Continuar';
+
+    const nombre = colab ? fmt(colab.nombre) : 'Colaborador';
+
+    // Caso 1: Ya tiene respuesta previa
+    if (respPrev) {
+      const lat = respPrev.lat;
+      const lng = respPrev.lng;
+      const fecha = fmtFecha(respPrev.created_at);
+
+      if (respPrev.accion === 'confirmada') {
+        // Ya confirmó — S2D
+        document.getElementById('nombre-d').textContent = nombre;
+        document.getElementById('cedula-d').textContent = 'Cédula: ' + val;
+        document.getElementById('fecha-d').textContent = fecha;
+        document.getElementById('map-link-d').href = 'https://www.google.com/maps?q=' + lat + ',' + lng;
+        document.getElementById('address-d').innerHTML = '<span class="address-loading">Obteniendo dirección...</span>';
+        obtenerDir(lat, lng, 'address-d');
+        show('s2d', 's1');
+      } else {
+        // Ya actualizó — S2E
+        document.getElementById('nombre-e').textContent = nombre;
+        document.getElementById('cedula-e').textContent = 'Cédula: ' + val;
+        document.getElementById('fecha-e').textContent = fecha;
+        document.getElementById('map-link-e').href = 'https://www.google.com/maps?q=' + lat + ',' + lng;
+        document.getElementById('address-e').innerHTML = '<span class="address-loading">Obteniendo dirección...</span>';
+        obtenerDir(lat, lng, 'address-e');
+        show('s2e', 's1');
+      }
+      return;
+    }
+
+    // Caso 2: Primera vez
+    if (!colab) {
+      document.getElementById('cedula-notfound-txt').textContent = val;
+      show('s2c', 's1');
+      return;
+    }
+
+    if (colab.has_geo) {
+      // Tiene punto del padrón — S2A
+      document.getElementById('nombre-a').textContent = nombre;
+      document.getElementById('cedula-a').textContent = 'Cédula: ' + val;
+      document.getElementById('map-link-a').href = 'https://www.google.com/maps?q=' + colab.lat + ',' + colab.lng;
+      document.getElementById('address-a').innerHTML = '<span class="address-loading">Obteniendo dirección...</span>';
+      obtenerDir(colab.lat, colab.lng, 'address-a');
+      show('s2a', 's1');
+    } else {
+      // Sin punto — S2B
+      document.getElementById('nombre-b').textContent = nombre;
+      document.getElementById('cedula-b').textContent = 'Cédula: ' + val;
+      show('s2b', 's1');
+    }
+
+  } catch(err) {
+    btn.disabled = false;
+    btn.innerHTML = 'Continuar';
+    document.getElementById('err-api').style.display = 'block';
+    console.error(err);
   }
 }
 
-function obtenerDireccion(lat, lng) {
-  obtenerDireccionElem(lat, lng, 'address-text');
-}
-
-function obtenerDireccionElem(lat, lng, elementId) {
+function obtenerDir(lat, lng, elementId) {
   fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=es`)
     .then(r => r.json())
     .then(data => {
@@ -341,31 +425,40 @@ function obtenerDireccionElem(lat, lng, elementId) {
       if (addr.road) partes.push(addr.road);
       if (addr.suburb || addr.neighbourhood) partes.push(addr.suburb || addr.neighbourhood);
       if (addr.city || addr.town || addr.county) partes.push(addr.city || addr.town || addr.county);
-      const direccion = partes.length > 0 ? partes.join(', ') : data.display_name.split(',').slice(0,3).join(',');
-      document.getElementById(elementId).textContent = direccion;
+      document.getElementById(elementId).textContent = partes.length > 0
+        ? partes.join(', ')
+        : data.display_name.split(',').slice(0,3).join(',');
     })
     .catch(() => {
       document.getElementById(elementId).textContent = lat + ', ' + lng;
     });
 }
 
-function goCapture() {
-  capturedLat = null; capturedLng = null;
+function goCapture(prev) {
+  capturedLat = null; capturedLng = null; capturedAccuracy = null;
   const box = document.getElementById('coords-box');
   box.style.display = 'none'; box.className = 'coords-box';
   document.getElementById('btn-guardar-gps').style.display = 'none';
   document.getElementById('btn-gps').disabled = false;
   document.getElementById('btn-gps').innerHTML = '&#127919; Capturar mi ubicación';
-  const prev = user ? (user.hasGeo ? 's2a' : 's2b') : 's2c';
   show('s3', prev);
 }
 
+// Nota sobre por qué esto usaba pocos decimales / ubicación incorrecta:
+// El código anterior tomaba UNA sola lectura con getCurrentPosition() y la guardaba
+// tal cual, sin mirar pos.coords.accuracy. En un teléfono, la primera lectura de
+// geolocalización suele venir de WiFi/antenas (rápida pero imprecisa, a veces con
+// error de cientos o miles de metros), y el GPS real recién "engancha" satélites
+// unos segundos después — por eso al reintentar manualmente 2-3 veces salían
+// coordenadas distintas y con más decimales significativos. Ahora se usa
+// watchPosition() para escuchar varias lecturas seguidas durante unos segundos,
+// quedarnos con la más precisa (menor accuracy) y mostrar esa precisión al usuario.
 function captureGPS() {
   const btn = document.getElementById('btn-gps');
   const box = document.getElementById('coords-box');
   const btnG = document.getElementById('btn-guardar-gps');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>&nbsp;Capturando...';
+  btn.innerHTML = '<span class="spinner"></span>&nbsp;Buscando señal GPS...';
   box.style.display = 'none'; btnG.style.display = 'none';
 
   if (!navigator.geolocation) {
@@ -376,64 +469,118 @@ function captureGPS() {
     return;
   }
 
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      capturedLat = pos.coords.latitude.toFixed(6);
-      capturedLng = pos.coords.longitude.toFixed(6);
-      box.className = 'coords-box';
-      box.textContent = capturedLat + ', ' + capturedLng;
-      box.style.display = 'block';
-      btn.innerHTML = '&#127919; Volver a capturar'; btn.disabled = false;
-      btnG.style.display = 'flex';
-    },
-    () => {
+  let best = null;
+  let finished = false;
+  let watchId = null;
+
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+    clearTimeout(giveUpTimer);
+
+    if (!best) {
       box.className = 'coords-box error';
       box.textContent = 'No se pudo obtener la ubicación. Activa el GPS e intenta de nuevo.';
       box.style.display = 'block';
       btn.innerHTML = '&#127919; Intentar de nuevo'; btn.disabled = false;
+      return;
+    }
+
+    capturedLat = best.lat;
+    capturedLng = best.lng;
+    capturedAccuracy = best.accuracy;
+
+    const precisionTxt = 'Precisión: ±' + Math.round(best.accuracy) + ' m';
+    const coordsTxt = capturedLat.toFixed(6) + ', ' + capturedLng.toFixed(6) + '  (' + precisionTxt + ')';
+
+    if (best.accuracy > ACCEPTABLE_ACCURACY_M) {
+      box.className = 'coords-box error';
+      box.textContent = coordsTxt + ' — La precisión es baja. Si puedes, acércate a una ventana o a un espacio abierto y vuelve a capturar antes de guardar.';
+    } else {
+      box.className = 'coords-box';
+      box.textContent = coordsTxt;
+    }
+    box.style.display = 'block';
+    btn.innerHTML = '&#127919; Volver a capturar'; btn.disabled = false;
+    btnG.style.display = 'flex';
+  };
+
+  const giveUpTimer = setTimeout(finish, MAX_CAPTURE_MS);
+
+  watchId = navigator.geolocation.watchPosition(
+    pos => {
+      const acc = pos.coords.accuracy;
+      if (!best || acc < best.accuracy) {
+        best = { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: acc };
+      }
+      btn.innerHTML = '<span class="spinner"></span>&nbsp;Mejorando precisión... (±' + Math.round(acc) + ' m)';
+      if (acc <= GOOD_ACCURACY_M) finish();
     },
-    { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+    () => finish(),
+    { enableHighAccuracy: true, timeout: MAX_CAPTURE_MS, maximumAge: 0 }
   );
 }
 
-function guardar(accion) {
-  let latFinal, lngFinal, nombreFinal, accionFinal;
-  if (accion === 'Confirmado') {
-    latFinal = user.lat; lngFinal = user.lng;
-    nombreFinal = user.nombre; accionFinal = 'Confirmado';
-  } else {
-    latFinal = capturedLat; lngFinal = capturedLng;
-    nombreFinal = user ? user.nombre : 'No encontrado';
-    accionFinal = !user ? 'Registrado - no en lista' : !user.hasGeo ? 'Registrado nuevo' : 'Actualizado';
+async function guardar(accion) {
+  let latFinal = capturedLat;
+  let lngFinal = capturedLng;
+  let accuracyFinal = capturedAccuracy;
+
+  if (accion === 'confirmada') {
+    if (respPrev) {
+      latFinal = respPrev.lat;
+      lngFinal = respPrev.lng;
+    } else if (colab) {
+      latFinal = colab.lat;
+      lngFinal = colab.lng;
+    }
+    accuracyFinal = null; // se reutiliza un punto ya existente, no hay una nueva lectura GPS
   }
 
-  const msgs = {
-    'Confirmado': 'La ubicación de tu domicilio se ha guardado correctamente.',
-    'Registrado nuevo': 'La ubicación de tu domicilio se ha guardado correctamente.',
-    'Actualizado': 'La ubicación de tu domicilio se ha guardado correctamente.',
-    'Registrado - no en lista': 'La ubicación de tu domicilio se ha guardado correctamente. RRHH la revisará.'
-  };
+  document.getElementById('success-msg').textContent =
+    accion === 'confirmada'
+      ? 'Tu georreferenciación ha sido confirmada correctamente.'
+      : 'La ubicación de tu domicilio se ha guardado correctamente.';
 
-  document.getElementById('success-msg').textContent = msgs[accionFinal] || 'Registro completado.';
   show('s4', null);
 
-  fetch(SCRIPT_URL, {
-    method: 'POST', mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ cedula: cedulaIngresada, nombre: nombreFinal, latitud: latFinal, longitud: lngFinal, accion: accionFinal })
-  }).catch(() => console.warn('Error al guardar.'));
-}
+  const payload = {
+    cedula: cedula,
+    nombre: colab ? colab.nombre : 'No encontrado',
+    lat: latFinal,
+    lng: lngFinal,
+    accuracy: accuracyFinal,
+    accion: accion,
+    area: colab ? (colab.area || '') : ''
+  };
 
-// Captura desde pantalla S2D (ya había contestado antes)
-function goCaptureDesdD() {
-  capturedLat = null; capturedLng = null;
-  const box = document.getElementById('coords-box');
-  box.style.display = 'none'; box.className = 'coords-box';
-  document.getElementById('btn-guardar-gps').style.display = 'none';
-  document.getElementById('btn-guardar-gps').onclick = function() { guardar('Actualizado'); };
-  document.getElementById('btn-gps').disabled = false;
-  document.getElementById('btn-gps').innerHTML = '&#127919; Capturar mi ubicación';
-  show('s3', 's2d');
+  try {
+    let res = await fetch(`${SUPABASE_URL}/rest/v1/respuestas`, {
+      method: 'POST',
+      headers: { ...HEADERS, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      // Si la columna "accuracy" todavía no existe en la tabla `respuestas`,
+      // Supabase/PostgREST rechaza la fila completa (no solo ese campo).
+      // Reintentamos sin "accuracy" para no perder el registro de lat/lng.
+      const errText = await res.text().catch(() => '');
+      console.warn('Guardado con accuracy falló, reintentando sin ese campo:', res.status, errText);
+      const { accuracy, ...payloadSinAccuracy } = payload;
+      res = await fetch(`${SUPABASE_URL}/rest/v1/respuestas`, {
+        method: 'POST',
+        headers: { ...HEADERS, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify(payloadSinAccuracy)
+      });
+      if (!res.ok) {
+        console.error('Error al guardar (reintento también falló):', res.status, await res.text().catch(() => ''));
+      }
+    }
+  } catch(err) {
+    console.error('Error de red al guardar:', err);
+  }
 }
 
 document.getElementById('cedula-input').addEventListener('keydown', e => {
