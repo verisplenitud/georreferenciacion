@@ -328,25 +328,31 @@ let colab = null;
 let respPrev = null;
 let capturedLat = null;
 let capturedLng = null;
-let prevScreen = null;
+let screenHistory = ['s1'];
 let cedula = '';
 const backBtn = document.getElementById('back-btn');
 
 function show(id, prev) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  prevScreen = prev || null;
-  backBtn.classList.toggle('hidden', id === 's1' || id === 's4');
+  if (screenHistory[screenHistory.length - 1] !== id) {
+    screenHistory.push(id);
+  }
+  backBtn.classList.toggle('hidden', screenHistory.length <= 1 || id === 's4');
 }
 
 function goBack() {
-  if (!prevScreen) return;
-  if (prevScreen === 's1') {
+  if (screenHistory.length <= 1) return;
+  screenHistory.pop();
+  const target = screenHistory[screenHistory.length - 1];
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(target).classList.add('active');
+  if (target === 's1') {
     document.getElementById('cedula-input').value = '';
     document.getElementById('err-formato').style.display = 'none';
     document.getElementById('err-api').style.display = 'none';
   }
-  show(prevScreen, null);
+  backBtn.classList.toggle('hidden', screenHistory.length <= 1);
 }
 
 function fmt(nombre) {
