@@ -196,16 +196,13 @@
 
     <!-- S2C: No está en el padrón -->
     <div class="screen" id="s2c">
-      <div class="no-record-card">
-        <div style="font-size:28px;">&#9888;&#65039;</div>
-        <p style="font-weight:600; margin-top:8px; color:var(--warning-text);">C&#233;dula no encontrada</p>
-        <p style="font-size:12px; color:var(--warning-text); margin-top:5px; line-height:1.5;">La c&#233;dula <strong id="cedula-notfound-txt"></strong> no est&#225; en nuestro listado.</p>
+      <div class="no-record-card" style="text-align:left;">
+        <p style="font-weight:600; color:var(--warning-text); margin-bottom:8px;">Ingresa correctamente tu c&#233;dula.</p>
+        <p style="font-size:13px; color:var(--warning-text); line-height:1.6;">Si est&#225; correcta, recuerda que esta encuesta est&#225; dirigida a colaboradores de Veris.</p>
       </div>
-      <p style="font-size:13px; color:var(--text-2); line-height:1.6;">Si eres colaborador activo puedes registrar tu ubicaci&#243;n de todas formas. RRHH revisar&#225; tu registro.</p>
-      <div class="divider">o</div>
-      <p style="font-size:12px; color:var(--text-3); text-align:center;">Si te equivocaste de c&#233;dula usa &#8592; para corregirla.</p>
+      <p style="font-size:12px; color:var(--text-3);">Usa &#8592; en la parte superior izquierda para corregir tu c&#233;dula.</p>
       <div style="margin-top:auto;">
-        <button class="btn btn-primary" onclick="goCapture('s2c')">&#128205; Registrar mi ubicaci&#243;n</button>
+        <button class="btn" onclick="goBack()">&#8592; Volver a ingresar mi c&#233;dula</button>
       </div>
       <div class="dots">
         <div class="dot"></div><div class="dot active"></div><div class="dot"></div><div class="dot"></div>
@@ -564,4 +561,4 @@ document.getElementById('cedula-input').addEventListener('keydown', e => {
 });
 </script>
 </body>
-</html> 
+</html>
