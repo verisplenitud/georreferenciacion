@@ -534,15 +534,12 @@ async function guardar(accion) {
     }
   }
 
-  document.getElementById('success-msg').textContent =
-    accion === 'confirmada'
-      ? 'Tu georreferenciación ha sido confirmada correctamente.'
-      : 'La ubicación de tu domicilio se ha guardado correctamente.';
-
-  show('s4', null);
+  // Mostrar spinner mientras guarda
+  const btnActivo = document.querySelector('.screen.active .btn-success, .screen.active .btn-primary');
+  if (btnActivo) { btnActivo.disabled = true; btnActivo.innerHTML = '<span class="spinner"></span>&nbsp;Guardando...'; }
 
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/respuestas`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/respuestas`, {
       method: 'POST',
       headers: { ...HEADERS, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
       body: JSON.stringify({
@@ -554,8 +551,20 @@ async function guardar(accion) {
         area: colab ? (colab.area || '') : ''
       })
     });
+
+    if (r.ok) {
+      document.getElementById('success-msg').textContent =
+        accion === 'confirmada'
+          ? 'Tu georreferenciación ha sido confirmada correctamente.'
+          : 'La ubicación de tu domicilio se ha guardado correctamente.';
+      show('s4', null);
+    } else {
+      if (btnActivo) { btnActivo.disabled = false; btnActivo.innerHTML = accion === 'confirmada' ? '&#10003; Mi ubicación está correcta' : '&#10003; Confirmar y guardar'; }
+      alert('No se pudo guardar tu respuesta. Verifica tu conexión a internet e intenta de nuevo.');
+    }
   } catch(err) {
-    console.warn('Error al guardar:', err);
+    if (btnActivo) { btnActivo.disabled = false; btnActivo.innerHTML = accion === 'confirmada' ? '&#10003; Mi ubicación está correcta' : '&#10003; Confirmar y guardar'; }
+    alert('No se pudo guardar tu respuesta. Verifica tu conexión a internet e intenta de nuevo.');
   }
 }
 
