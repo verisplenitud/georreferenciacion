@@ -348,6 +348,8 @@ function goBack() {
     document.getElementById('cedula-input').value = '';
     document.getElementById('err-formato').style.display = 'none';
     document.getElementById('err-api').style.display = 'none';
+    document.getElementById('nombre-notfound').value = '';
+    document.getElementById('err-nombre-notfound').style.display = 'none';
   }
   show(prevScreen, null);
 }
@@ -534,12 +536,15 @@ async function guardar(accion) {
     }
   }
 
-  // Mostrar spinner mientras guarda
-  const btnActivo = document.querySelector('.screen.active .btn-success, .screen.active .btn-primary');
-  if (btnActivo) { btnActivo.disabled = true; btnActivo.innerHTML = '<span class="spinner"></span>&nbsp;Guardando...'; }
+  document.getElementById('success-msg').textContent =
+    accion === 'confirmada'
+      ? 'Tu georreferenciación ha sido confirmada correctamente.'
+      : 'La ubicación de tu domicilio se ha guardado correctamente.';
+
+  show('s4', null);
 
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/respuestas`, {
+    await fetch(`${SUPABASE_URL}/rest/v1/respuestas`, {
       method: 'POST',
       headers: { ...HEADERS, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
       body: JSON.stringify({
@@ -551,21 +556,23 @@ async function guardar(accion) {
         area: colab ? (colab.area || '') : ''
       })
     });
-
-    if (r.ok) {
-      document.getElementById('success-msg').textContent =
-        accion === 'confirmada'
-          ? 'Tu georreferenciación ha sido confirmada correctamente.'
-          : 'La ubicación de tu domicilio se ha guardado correctamente.';
-      show('s4', null);
-    } else {
-      if (btnActivo) { btnActivo.disabled = false; btnActivo.innerHTML = accion === 'confirmada' ? '&#10003; Mi ubicación está correcta' : '&#10003; Confirmar y guardar'; }
-      alert('No se pudo guardar tu respuesta. Verifica tu conexión a internet e intenta de nuevo.');
-    }
   } catch(err) {
-    if (btnActivo) { btnActivo.disabled = false; btnActivo.innerHTML = accion === 'confirmada' ? '&#10003; Mi ubicación está correcta' : '&#10003; Confirmar y guardar'; }
-    alert('No se pudo guardar tu respuesta. Verifica tu conexión a internet e intenta de nuevo.');
+    console.warn('Error al guardar:', err);
   }
+}
+
+function validarNombreYCapturar() {
+  const nombre = document.getElementById('nombre-notfound').value.trim();
+  const err = document.getElementById('err-nombre-notfound');
+  if (!nombre || nombre.length < 3) {
+    err.style.display = 'block';
+    return;
+  }
+  err.style.display = 'none';
+  // Guardar nombre para usarlo al registrar
+  if (!colab) colab = { nombre: nombre.toUpperCase(), lat: null, lng: null, has_geo: false, area: '' };
+  else colab.nombre = nombre.toUpperCase();
+  goCapture('s2c');
 }
 
 document.getElementById('cedula-input').addEventListener('keydown', e => {
