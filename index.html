@@ -348,8 +348,6 @@ function goBack() {
     document.getElementById('cedula-input').value = '';
     document.getElementById('err-formato').style.display = 'none';
     document.getElementById('err-api').style.display = 'none';
-    document.getElementById('nombre-notfound').value = '';
-    document.getElementById('err-nombre-notfound').style.display = 'none';
   }
   show(prevScreen, null);
 }
@@ -559,20 +557,6 @@ async function guardar(accion) {
   } catch(err) {
     console.warn('Error al guardar:', err);
   }
-}
-
-function validarNombreYCapturar() {
-  const nombre = document.getElementById('nombre-notfound').value.trim();
-  const err = document.getElementById('err-nombre-notfound');
-  if (!nombre || nombre.length < 3) {
-    err.style.display = 'block';
-    return;
-  }
-  err.style.display = 'none';
-  // Guardar nombre para usarlo al registrar
-  if (!colab) colab = { nombre: nombre.toUpperCase(), lat: null, lng: null, has_geo: false, area: '' };
-  else colab.nombre = nombre.toUpperCase();
-  goCapture('s2c');
 }
 
 document.getElementById('cedula-input').addEventListener('keydown', e => {
