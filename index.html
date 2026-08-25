@@ -244,7 +244,6 @@
         <div class="colab-cedula" id="cedula-e"></div>
       </div>
       <div style="background:#eef2ff; border:1px solid #c7d2fe; border-radius:var(--radius); padding:0.6rem 1rem; display:flex; align-items:center; gap:10px;">
-        <span style="font-size:18px;">&#128205;</span>
         <div>
           <p style="font-weight:600; font-size:13px; color:#4361ee;">Ya actualizaste tu ubicaci&#243;n</p>
           <p style="font-size:11px; color:#4361ee; margin-top:2px; opacity:0.8;">Registrado el <strong id="fecha-e"></strong></p>
@@ -439,20 +438,11 @@ async function goS2() {
       return;
     }
 
-    if (colab.has_geo) {
-      // Tiene punto del padrón — S2A
-      document.getElementById('nombre-a').textContent = nombre;
-      document.getElementById('cedula-a').textContent = 'Cédula: ' + val;
-      document.getElementById('map-link-a').href = 'https://www.google.com/maps?q=' + colab.lat + ',' + colab.lng;
-      document.getElementById('address-a').innerHTML = '<span class="address-loading">Obteniendo dirección...</span>';
-      obtenerDir(colab.lat, colab.lng, 'address-a');
-      show('s2a', 's1');
-    } else {
-      // Sin punto — S2B
-      document.getElementById('nombre-b').textContent = nombre;
-      document.getElementById('cedula-b').textContent = 'Cédula: ' + val;
-      show('s2b', 's1');
-    }
+    // Caso 2: Primera vez — siempre se captura desde cero, sin importar
+    // si el padrón ya traía una coordenada previa (colab.has_geo).
+    document.getElementById('nombre-b').textContent = nombre;
+    document.getElementById('cedula-b').textContent = 'Cédula: ' + val;
+    show('s2b', 's1');
 
   } catch(err) {
     btn.disabled = false;
