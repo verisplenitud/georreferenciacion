@@ -185,6 +185,7 @@
       </div>
       <p style="font-size:13px; color:var(--text-2); line-height:1.6;">Al tocar el bot&#243;n, tu celular pedir&#225; permiso para acceder al GPS y capturar&#225; tu ubicaci&#243;n. Toca <strong>"Permitir"</strong>.</p>
       <div class="coords-box" id="coords-box-b"></div>
+      <a id="map-link-gps-b" href="#" target="_blank" class="map-link-btn" style="display:none; align-self:flex-start;">&#128506; Ver en Google Maps</a>
       <div style="margin-top:auto; display:flex; flex-direction:column; gap:10px;">
         <button class="btn btn-primary" id="btn-gps-b" onclick="captureGPS('b')">&#127919; Capturar mi ubicaci&#243;n</button>
         <button class="btn btn-success" id="btn-guardar-gps-b" onclick="guardar('actualizada')" style="display:none;">&#10003; Confirmar y guardar</button>
@@ -491,9 +492,11 @@ function captureGPS(suffix) {
   const btn = document.getElementById('btn-gps' + idPrefix);
   const box = document.getElementById('coords-box' + idPrefix);
   const btnG = document.getElementById('btn-guardar-gps' + idPrefix);
+  const mapLink = document.getElementById('map-link-gps' + idPrefix);
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>&nbsp;Capturando...';
   box.style.display = 'none'; btnG.style.display = 'none';
+  if (mapLink) mapLink.style.display = 'none';
 
   if (!navigator.geolocation) {
     box.className = 'coords-box error';
@@ -510,6 +513,10 @@ function captureGPS(suffix) {
       box.className = 'coords-box';
       box.textContent = capturedLat.toFixed(6) + ', ' + capturedLng.toFixed(6);
       box.style.display = 'block';
+      if (mapLink) {
+        mapLink.href = 'https://www.google.com/maps?q=' + capturedLat + ',' + capturedLng;
+        mapLink.style.display = 'inline-flex';
+      }
       btn.innerHTML = '&#127919; Volver a capturar'; btn.disabled = false;
       btnG.style.display = 'flex';
     },
