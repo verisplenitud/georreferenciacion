@@ -174,20 +174,20 @@
       </div>
     </div>
 
-    <!-- S2B: Sin georref (primera vez, sin punto) -->
+    <!-- S2B: Sin georref (primera vez) — fusiona info + captura GPS directa -->
     <div class="screen" id="s2b">
       <div class="info-card">
         <div class="colab-name" id="nombre-b"></div>
         <div class="colab-cedula" id="cedula-b"></div>
       </div>
-      <div class="no-record-card">
-        <div style="font-size:28px;">&#128205;</div>
-        <p style="font-weight:600; margin-top:8px; color:var(--warning-text);">Sin ubicaci&#243;n registrada</p>
-        <p style="font-size:12px; color:var(--warning-text); margin-top:5px; line-height:1.5;">A&#250;n no tenemos tu ubicaci&#243;n de domicilio. Necesitamos registrarla por primera vez.</p>
+      <div class="warn-box">
+        <p>&#127968; Aseg&#250;rate de estar en tu domicilio antes de capturar</p>
       </div>
-      <p style="font-size:13px; color:var(--text-2); line-height:1.6;">Aseg&#250;rate de estar en tu casa antes de continuar.</p>
-      <div style="margin-top:auto;">
-        <button class="btn btn-primary" onclick="goCapture('s2b')">&#128205; Registrar mi domicilio</button>
+      <p style="font-size:13px; color:var(--text-2); line-height:1.6;">Al tocar el bot&#243;n, tu celular pedir&#225; permiso para acceder al GPS y capturar&#225; tu ubicaci&#243;n. Toca <strong>"Permitir"</strong>.</p>
+      <div class="coords-box" id="coords-box-b"></div>
+      <div style="margin-top:auto; display:flex; flex-direction:column; gap:10px;">
+        <button class="btn btn-primary" id="btn-gps-b" onclick="captureGPS('b')">&#127919; Capturar mi ubicaci&#243;n</button>
+        <button class="btn btn-success" id="btn-guardar-gps-b" onclick="guardar('actualizada')" style="display:none;">&#10003; Confirmar y guardar</button>
       </div>
       <div class="dots">
         <div class="dot"></div><div class="dot active"></div><div class="dot"></div><div class="dot"></div>
@@ -442,6 +442,12 @@ async function goS2() {
     // si el padrón ya traía una coordenada previa (colab.has_geo).
     document.getElementById('nombre-b').textContent = nombre;
     document.getElementById('cedula-b').textContent = 'Cédula: ' + val;
+    capturedLat = null; capturedLng = null;
+    const boxB = document.getElementById('coords-box-b');
+    boxB.style.display = 'none'; boxB.className = 'coords-box';
+    document.getElementById('btn-guardar-gps-b').style.display = 'none';
+    document.getElementById('btn-gps-b').disabled = false;
+    document.getElementById('btn-gps-b').innerHTML = '&#127919; Capturar mi ubicación';
     show('s2b', 's1');
 
   } catch(err) {
@@ -480,10 +486,11 @@ function goCapture(prev) {
   show('s3', prev);
 }
 
-function captureGPS() {
-  const btn = document.getElementById('btn-gps');
-  const box = document.getElementById('coords-box');
-  const btnG = document.getElementById('btn-guardar-gps');
+function captureGPS(suffix) {
+  const idPrefix = suffix ? '-' + suffix : '';
+  const btn = document.getElementById('btn-gps' + idPrefix);
+  const box = document.getElementById('coords-box' + idPrefix);
+  const btnG = document.getElementById('btn-guardar-gps' + idPrefix);
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>&nbsp;Capturando...';
   box.style.display = 'none'; btnG.style.display = 'none';
